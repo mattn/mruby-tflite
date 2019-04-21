@@ -251,7 +251,7 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
       }
       break;
     default:
-      mrb_raisef(mrb, E_RUNTIME_ERROR, "tensor type %s not supported", tensor_type_name(type));
+      mrb_raisef(mrb, E_RUNTIME_ERROR, "tensor type %S not supported", mrb_str_new_cstr(mrb, tensor_type_name(type)));
   }
   MRB_SET_FROZEN_FLAG(mrb_basic_ptr(ret));
   return ret;
@@ -297,7 +297,7 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
       }
       break;
     default:
-      mrb_raisef(mrb, E_RUNTIME_ERROR, "tensor type %s not supported", tensor_type_name(type));
+      mrb_raisef(mrb, E_RUNTIME_ERROR, "tensor type %S not supported", mrb_str_new_cstr(mrb, tensor_type_name(type)));
   }
   return mrb_nil_value();
 }
