@@ -230,6 +230,7 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
 
   type = TFL_TensorType(tensor);
   switch (type) {
+    case kTfLiteUint8:
     case kTfLiteInt8:
       len = TFL_TensorByteSize(tensor);
       uint8s = (uint8_t*) TFL_TensorData(tensor);
@@ -275,8 +276,8 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
 
   type = TFL_TensorType(tensor);
   switch (type) {
+    case kTfLiteUint8:
     case kTfLiteInt8:
-      puts("byte");
       len = TFL_TensorByteSize(tensor);
       if (ary_len != len) {
         mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
