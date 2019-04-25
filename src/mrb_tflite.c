@@ -56,6 +56,11 @@ mrb_tflite_model_free(mrb_state *mrb, void *p) {
 }
 
 static void
+mrb_tflite_interpreter_options_free(mrb_state *mrb, void *p) {
+  TFL_DeleteInterpreterOptions((TFL_InterpreterOptions*)p);
+}
+
+static void
 mrb_tflite_interpreter_free(mrb_state *mrb, void *p) {
   TFL_DeleteInterpreter((TFL_Interpreter*)p);
 }
@@ -66,6 +71,10 @@ static const struct mrb_data_type mrb_tflite_tensor_type_ = {
 
 static const struct mrb_data_type mrb_tflite_model_type = {
   "mrb_tflite_model", mrb_tflite_model_free,
+};
+
+static const struct mrb_data_type mrb_tflite_interpreter_options_type = {
+  "mrb_tflite_interpreter_options", mrb_tflite_interpreter_options_free
 };
 
 static const struct mrb_data_type mrb_tflite_interpreter_type = {
@@ -103,8 +112,32 @@ mrb_tflite_model_from_file(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value
+mrb_tflite_interpreter_options_init(mrb_state *mrb, mrb_value self) {
+  TFL_InterpreterOptions* interpreter_options;
+
+  interpreter_options = TFL_NewInterpreterOptions();
+  if (interpreter_options == NULL) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter options");
+  }
+  DATA_TYPE(self) = &mrb_tflite_interpreter_type;
+  DATA_PTR(self) = interpreter_options;
+  return self;
+}
+
+static mrb_value
+mrb_tflite_interpreter_options_num_threads_set(mrb_state *mrb, mrb_value self) {
+  TFL_InterpreterOptions* interpreter_options;
+  int num_threads = 0;
+  mrb_get_args(mrb, "i", &num_threads);
+  interpreter_options = DATA_PTR(self);
+  TFL_InterpreterOptionsSetNumThreads(interpreter_options, num_threads);
+  return mrb_nil_value();
+}
+
+static mrb_value
 mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
   TFL_Interpreter* interpreter;
+  TFL_InterpreterOptions* interpreter_options = NULL;
   mrb_value arg_model;
   mrb_value arg_options = mrb_nil_value();
 
@@ -112,7 +145,10 @@ mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
   if (mrb_nil_p(arg_model) || DATA_TYPE(arg_model) != &mrb_tflite_model_type) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
-  interpreter = TFL_NewInterpreter((TFL_Model*) DATA_PTR(arg_model), NULL);
+  if (!mrb_nil_p(arg_options) && DATA_TYPE(arg_options) == &mrb_tflite_interpreter_options_type) {
+    interpreter_options = DATA_PTR(arg_options);
+  }
+  interpreter = TFL_NewInterpreter((TFL_Model*) DATA_PTR(arg_model), interpreter_options);
   if (interpreter == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter");
   }
@@ -308,7 +344,7 @@ mrb_mruby_tflite_gem_init(mrb_state* mrb) {
   struct RClass *_class_tflite;
   struct RClass *_class_tflite_model;
   struct RClass *_class_tflite_interpreter;
-  //struct RClass *_class_tflite_interpreter_options;
+  struct RClass *_class_tflite_interpreter_options;
   struct RClass *_class_tflite_tensor;
   ARENA_SAVE;
 
@@ -318,6 +354,10 @@ mrb_mruby_tflite_gem_init(mrb_state* mrb) {
   mrb_define_method(mrb, _class_tflite_model, "initialize", mrb_tflite_model_init, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, _class_tflite_model, "from_file", mrb_tflite_model_from_file, MRB_ARGS_REQ(1));
   ARENA_RESTORE;
+
+  _class_tflite_interpreter_options = mrb_define_class_under(mrb, _class_tflite, "InterpreterOptions", mrb->object_class);
+  mrb_define_method(mrb, _class_tflite_interpreter_options, "initialize", mrb_tflite_interpreter_options_init, MRB_ARGS_NONE());
+  mrb_define_method(mrb, _class_tflite_interpreter_options, "num_threads=", mrb_tflite_interpreter_options_num_threads_set, MRB_ARGS_REQ(1));
 
   _class_tflite_interpreter = mrb_define_class_under(mrb, _class_tflite, "Interpreter", mrb->object_class);
   mrb_define_method(mrb, _class_tflite_interpreter, "initialize", mrb_tflite_interpreter_init, MRB_ARGS_ARG(1, 1));
