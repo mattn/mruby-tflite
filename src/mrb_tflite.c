@@ -23,7 +23,7 @@
 #endif
 
 static const char*
-tensor_type_name(TFL_Type type) {
+tensor_type_name(TfLiteType type) {
   switch (type) {
     case kTfLiteNoType:
       return "none";
@@ -52,17 +52,17 @@ tensor_type_name(TFL_Type type) {
 
 static void
 mrb_tflite_model_free(mrb_state *mrb, void *p) {
-  TFL_DeleteModel((TFL_Model*)p);
+  TfLiteModelDelete((TfLiteModel*)p);
 }
 
 static void
 mrb_tflite_interpreter_options_free(mrb_state *mrb, void *p) {
-  TFL_DeleteInterpreterOptions((TFL_InterpreterOptions*)p);
+  TfLiteInterpreterOptionsDelete((TfLiteInterpreterOptions*)p);
 }
 
 static void
 mrb_tflite_interpreter_free(mrb_state *mrb, void *p) {
-  TFL_DeleteInterpreter((TFL_Interpreter*)p);
+  TfLiteInterpreterDelete((TfLiteInterpreter*)p);
 }
 
 static const struct mrb_data_type mrb_tflite_tensor_type_ = {
@@ -83,10 +83,10 @@ static const struct mrb_data_type mrb_tflite_interpreter_type = {
 
 static mrb_value
 mrb_tflite_model_init(mrb_state *mrb, mrb_value self) {
-  TFL_Model* model;
+  TfLiteModel* model;
   mrb_value str;
   mrb_get_args(mrb, "S", &str);
-  model = TFL_NewModel(RSTRING_PTR(str), RSTRING_LEN(str));
+  model = TfLiteModelCreate(RSTRING_PTR(str), RSTRING_LEN(str));
   if (model == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create model");
   }
@@ -97,12 +97,12 @@ mrb_tflite_model_init(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_model_from_file(mrb_state *mrb, mrb_value self) {
-  TFL_Model* model;
+  TfLiteModel* model;
   mrb_value str;
   struct RClass* _class_tflite_model;
 
   mrb_get_args(mrb, "S", &str);
-  model = TFL_NewModelFromFile(RSTRING_PTR(str));
+  model = TfLiteModelCreateFromFile(RSTRING_PTR(str));
   if (model == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create model");
   }
@@ -113,9 +113,9 @@ mrb_tflite_model_from_file(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_options_init(mrb_state *mrb, mrb_value self) {
-  TFL_InterpreterOptions* interpreter_options;
+  TfLiteInterpreterOptions* interpreter_options;
 
-  interpreter_options = TFL_NewInterpreterOptions();
+  interpreter_options = TfLiteInterpreterOptionsCreate();
   if (interpreter_options == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter options");
   }
@@ -126,18 +126,18 @@ mrb_tflite_interpreter_options_init(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_options_num_threads_set(mrb_state *mrb, mrb_value self) {
-  TFL_InterpreterOptions* interpreter_options;
+  TfLiteInterpreterOptions* interpreter_options;
   int num_threads = 0;
   mrb_get_args(mrb, "i", &num_threads);
   interpreter_options = DATA_PTR(self);
-  TFL_InterpreterOptionsSetNumThreads(interpreter_options, num_threads);
+  TfLiteInterpreterOptionsSetNumThreads(interpreter_options, num_threads);
   return mrb_nil_value();
 }
 
 static mrb_value
 mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
-  TFL_Interpreter* interpreter;
-  TFL_InterpreterOptions* interpreter_options = NULL;
+  TfLiteInterpreter* interpreter;
+  TfLiteInterpreterOptions* interpreter_options = NULL;
   mrb_value arg_model;
   mrb_value arg_options = mrb_nil_value();
 
@@ -148,7 +148,7 @@ mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
   if (!mrb_nil_p(arg_options) && DATA_TYPE(arg_options) == &mrb_tflite_interpreter_options_type) {
     interpreter_options = DATA_PTR(arg_options);
   }
-  interpreter = TFL_NewInterpreter((TFL_Model*) DATA_PTR(arg_model), interpreter_options);
+  interpreter = TfLiteInterpreterCreate((TfLiteModel*) DATA_PTR(arg_model), interpreter_options);
   if (interpreter == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter");
   }
@@ -159,8 +159,8 @@ mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_allocate_tensors(mrb_state *mrb, mrb_value self) {
-  TFL_Interpreter* interpreter = DATA_PTR(self);
-  if (TFL_InterpreterAllocateTensors(interpreter) != kTfLiteOk) {
+  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  if (TfLiteInterpreterAllocateTensors(interpreter) != kTfLiteOk) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot allocate tensors");
   }
   return mrb_nil_value();
@@ -168,8 +168,8 @@ mrb_tflite_interpreter_allocate_tensors(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_invoke(mrb_state *mrb, mrb_value self) {
-  TFL_Interpreter* interpreter = DATA_PTR(self);
-  if (TFL_InterpreterInvoke(interpreter) != kTfLiteOk) {
+  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  if (TfLiteInterpreterInvoke(interpreter) != kTfLiteOk) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot invoke");
   }
   return mrb_nil_value();
@@ -177,25 +177,25 @@ mrb_tflite_interpreter_invoke(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_input_tensor_count(mrb_state *mrb, mrb_value self) {
-  TFL_Interpreter* interpreter = DATA_PTR(self);
-  return mrb_fixnum_value(TFL_InterpreterGetInputTensorCount(interpreter));
+  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  return mrb_fixnum_value(TfLiteInterpreterGetInputTensorCount(interpreter));
 }
 
 static mrb_value
 mrb_tflite_interpreter_output_tensor_count(mrb_state *mrb, mrb_value self) {
-  TFL_Interpreter* interpreter = DATA_PTR(self);
-  return mrb_fixnum_value(TFL_InterpreterGetOutputTensorCount(interpreter));
+  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  return mrb_fixnum_value(TfLiteInterpreterGetOutputTensorCount(interpreter));
 }
 
 static mrb_value
 mrb_tflite_interpreter_input_tensor(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor;
+  TfLiteTensor* tensor;
   mrb_int index;
   struct RClass* _class_tflite_tensor;
   mrb_value c;
-  TFL_Interpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = DATA_PTR(self);
   mrb_get_args(mrb, "i", &index);
-  tensor = TFL_InterpreterGetInputTensor(interpreter, index);
+  tensor = TfLiteInterpreterGetInputTensor(interpreter, index);
   if (tensor == NULL) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
@@ -208,13 +208,13 @@ mrb_tflite_interpreter_input_tensor(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_output_tensor(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor;
+  TfLiteTensor* tensor;
   mrb_int index;
   struct RClass* _class_tflite_tensor;
   mrb_value c;
-  TFL_Interpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = DATA_PTR(self);
   mrb_get_args(mrb, "i", &index);
-  tensor = (TFL_Tensor*) TFL_InterpreterGetOutputTensor(interpreter, index);
+  tensor = (TfLiteTensor*) TfLiteInterpreterGetOutputTensor(interpreter, index);
   _class_tflite_tensor = mrb_class_get_under(mrb, mrb_module_get(mrb, "TfLite"), "Tensor");
   c = mrb_obj_new(mrb, _class_tflite_tensor, 0, NULL);
   DATA_TYPE(c) = &mrb_tflite_tensor_type_;
@@ -224,52 +224,52 @@ mrb_tflite_interpreter_output_tensor(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_tensor_type(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
-  return mrb_fixnum_value(TFL_TensorType(tensor));
+  TfLiteTensor* tensor = DATA_PTR(self);
+  return mrb_fixnum_value(TfLiteTensorType(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_name(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
-  return mrb_str_new_cstr(mrb, TFL_TensorName(tensor));
+  TfLiteTensor* tensor = DATA_PTR(self);
+  return mrb_str_new_cstr(mrb, TfLiteTensorName(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_num_dims(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
-  return mrb_fixnum_value(TFL_TensorNumDims(tensor));
+  TfLiteTensor* tensor = DATA_PTR(self);
+  return mrb_fixnum_value(TfLiteTensorNumDims(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_dim(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = DATA_PTR(self);
   mrb_int index;
   mrb_get_args(mrb, "i", &index);
-  return mrb_fixnum_value(TFL_TensorDim(tensor, index));
+  return mrb_fixnum_value(TfLiteTensorDim(tensor, index));
 }
 
 static mrb_value
 mrb_tflite_tensor_byte_size(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
-  return mrb_fixnum_value(TFL_TensorByteSize(tensor));
+  TfLiteTensor* tensor = DATA_PTR(self);
+  return mrb_fixnum_value(TfLiteTensorByteSize(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = DATA_PTR(self);
   int ai, i;
   mrb_value ret;
   int len;
-  TFL_Type type;
+  TfLiteType type;
   uint8_t *uint8s;
   float *float32s;
 
-  type = TFL_TensorType(tensor);
+  type = TfLiteTensorType(tensor);
   switch (type) {
     case kTfLiteUInt8:
     case kTfLiteInt8:
-      len = TFL_TensorByteSize(tensor);
-      uint8s = (uint8_t*) TFL_TensorData(tensor);
+      len = TfLiteTensorByteSize(tensor);
+      uint8s = (uint8_t*) TfLiteTensorData(tensor);
       ret = mrb_ary_new_capa(mrb, len);
       ai = mrb_gc_arena_save(mrb);
       for (i = 0; i < len; i++) {
@@ -278,8 +278,8 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
       }
       break;
     case kTfLiteFloat32:
-      len = TFL_TensorByteSize(tensor) / 4;
-      float32s = (float*) TFL_TensorData(tensor);
+      len = TfLiteTensorByteSize(tensor) / 4;
+      float32s = (float*) TfLiteTensorData(tensor);
       ret = mrb_ary_new_capa(mrb, len);
       ai = mrb_gc_arena_save(mrb);
       for (i = 0; i < len; i++) {
@@ -296,10 +296,10 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
-  TFL_Tensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = DATA_PTR(self);
   int i;
   int len, ary_len;
-  TFL_Type type;
+  TfLiteType type;
   uint8_t *uint8s;
   float *float32s;
   mrb_value arg_data;
@@ -310,25 +310,25 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
   }
   ary_len = RARRAY_LEN(arg_data);
 
-  type = TFL_TensorType(tensor);
+  type = TfLiteTensorType(tensor);
   switch (type) {
     case kTfLiteUInt8:
     case kTfLiteInt8:
-      len = TFL_TensorByteSize(tensor);
+      len = TfLiteTensorByteSize(tensor);
       if (ary_len != len) {
         mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
       }
-      uint8s = (uint8_t*) TFL_TensorData(tensor);
+      uint8s = (uint8_t*) TfLiteTensorData(tensor);
       for (i = 0; i < len; i++) {
         uint8s[i] = (uint8_t) mrb_fixnum(mrb_ary_entry(arg_data, i));
       }
       break;
     case kTfLiteFloat32:
-      len = TFL_TensorByteSize(tensor) / 4;
+      len = TfLiteTensorByteSize(tensor) / 4;
       if (ary_len != len) {
         mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
       }
-      float32s = (float*) TFL_TensorData(tensor);
+      float32s = (float*) TfLiteTensorData(tensor);
       for (i = 0; i < len; i++) {
         float32s[i] = mrb_to_flo(mrb, mrb_ary_entry(arg_data, i));
       }
