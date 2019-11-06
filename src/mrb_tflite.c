@@ -119,7 +119,7 @@ mrb_tflite_interpreter_options_init(mrb_state *mrb, mrb_value self) {
   if (interpreter_options == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter options");
   }
-  DATA_TYPE(self) = &mrb_tflite_interpreter_type;
+  DATA_TYPE(self) = &mrb_tflite_interpreter_options_type;
   DATA_PTR(self) = interpreter_options;
   return self;
 }
@@ -131,6 +131,16 @@ mrb_tflite_interpreter_options_num_threads_set(mrb_state *mrb, mrb_value self) {
   mrb_get_args(mrb, "i", &num_threads);
   interpreter_options = DATA_PTR(self);
   TfLiteInterpreterOptionsSetNumThreads(interpreter_options, num_threads);
+  return mrb_nil_value();
+}
+
+static mrb_value
+mrb_tflite_interpreter_options_add_delegate(mrb_state *mrb, mrb_value self) {
+  TfLiteInterpreterOptions* interpreter_options;
+  mrb_value delegate;
+  mrb_get_args(mrb, "o", &delegate);
+  interpreter_options = DATA_PTR(self);
+  TfLiteInterpreterOptionsAddDelegate(interpreter_options, DATA_PTR(delegate));
   return mrb_nil_value();
 }
 
@@ -358,6 +368,7 @@ mrb_mruby_tflite_gem_init(mrb_state* mrb) {
   _class_tflite_interpreter_options = mrb_define_class_under(mrb, _class_tflite, "InterpreterOptions", mrb->object_class);
   mrb_define_method(mrb, _class_tflite_interpreter_options, "initialize", mrb_tflite_interpreter_options_init, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_tflite_interpreter_options, "num_threads=", mrb_tflite_interpreter_options_num_threads_set, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, _class_tflite_interpreter_options, "add_delegate", mrb_tflite_interpreter_options_add_delegate, MRB_ARGS_REQ(1));
 
   _class_tflite_interpreter = mrb_define_class_under(mrb, _class_tflite, "Interpreter", mrb->object_class);
   mrb_define_method(mrb, _class_tflite_interpreter, "initialize", mrb_tflite_interpreter_init, MRB_ARGS_ARG(1, 1));
