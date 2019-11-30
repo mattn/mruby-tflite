@@ -19,7 +19,7 @@ end
 
 ## Requirements
 
-TensorFlow Lite
+* TensorFlow Lite
 
 ## License
 
