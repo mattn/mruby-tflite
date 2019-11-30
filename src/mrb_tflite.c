@@ -10,7 +10,7 @@
 #include <mruby/array.h>
 #include <mruby/class.h>
 #include <mruby/variable.h>
-#include <tensorflow/lite/experimental/c/c_api.h>
+#include <tensorflow/lite/c/c_api.h>
 
 #if 1
 #define ARENA_SAVE \
