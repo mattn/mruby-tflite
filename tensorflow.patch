@@ -1,0 +1,12 @@
+diff --git a/tensorflow/lite/delegates/gpu/common/BUILD b/tensorflow/lite/delegates/gpu/common/BUILD
+index e9877b63fb..fe625c25e7 100644
+--- a/tensorflow/lite/delegates/gpu/common/BUILD
++++ b/tensorflow/lite/delegates/gpu/common/BUILD
+@@ -251,6 +251,7 @@ cc_library(
+     name = "status",
+     hdrs = ["status.h"],
+     deps = ["@com_google_absl//absl/status"],
++    defines = ["EGL_NO_X11=1"],
+ )
+ 
+ cc_library(

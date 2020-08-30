@@ -361,16 +361,19 @@ mrb_mruby_tflite_gem_init(mrb_state* mrb) {
   _class_tflite = mrb_define_module(mrb, "TfLite");
 
   _class_tflite_model = mrb_define_class_under(mrb, _class_tflite, "Model", mrb->object_class);
+  MRB_SET_INSTANCE_TT(_class_tflite_model, MRB_TT_DATA);
   mrb_define_method(mrb, _class_tflite_model, "initialize", mrb_tflite_model_init, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, _class_tflite_model, "from_file", mrb_tflite_model_from_file, MRB_ARGS_REQ(1));
   ARENA_RESTORE;
 
   _class_tflite_interpreter_options = mrb_define_class_under(mrb, _class_tflite, "InterpreterOptions", mrb->object_class);
+  MRB_SET_INSTANCE_TT(_class_tflite_interpreter_options, MRB_TT_DATA);
   mrb_define_method(mrb, _class_tflite_interpreter_options, "initialize", mrb_tflite_interpreter_options_init, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_tflite_interpreter_options, "num_threads=", mrb_tflite_interpreter_options_num_threads_set, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, _class_tflite_interpreter_options, "add_delegate", mrb_tflite_interpreter_options_add_delegate, MRB_ARGS_REQ(1));
 
   _class_tflite_interpreter = mrb_define_class_under(mrb, _class_tflite, "Interpreter", mrb->object_class);
+  MRB_SET_INSTANCE_TT(_class_tflite_interpreter, MRB_TT_DATA);
   mrb_define_method(mrb, _class_tflite_interpreter, "initialize", mrb_tflite_interpreter_init, MRB_ARGS_ARG(1, 1));
   mrb_define_method(mrb, _class_tflite_interpreter, "allocate_tensors", mrb_tflite_interpreter_allocate_tensors, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_tflite_interpreter, "invoke", mrb_tflite_interpreter_invoke, MRB_ARGS_NONE());
@@ -381,6 +384,7 @@ mrb_mruby_tflite_gem_init(mrb_state* mrb) {
   ARENA_RESTORE;
 
   _class_tflite_tensor = mrb_define_class_under(mrb, _class_tflite, "Tensor", mrb->object_class);
+  MRB_SET_INSTANCE_TT(_class_tflite_tensor, MRB_TT_DATA);
   mrb_define_method(mrb, _class_tflite_tensor, "type", mrb_tflite_tensor_type, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_tflite_tensor, "name", mrb_tflite_tensor_name, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_tflite_tensor, "num_dims", mrb_tflite_tensor_num_dims, MRB_ARGS_NONE());

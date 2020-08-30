@@ -1,5 +1,5 @@
 assert('xor') do
-  model = TfLite::Model.from_file('xor_model.tflite')
+  model = TfLite::Model.from_file(ENV['MRB_TFLITE_XORMODEL'])
   interpreter = TfLite::Interpreter.new(model)
   interpreter.allocate_tensors
   input = interpreter.input_tensor(0)
