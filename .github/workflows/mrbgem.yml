@@ -1,0 +1,36 @@
+name: mrbgem test
+
+on:
+  schedule:
+    - cron: 0 0 * * *
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04]
+        mruby_version: [master, 2.1.2, 1.4.1]
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} & mruby-${{ matrix.mruby_version }}
+    env:
+      MRUBY_VERSION: ${{ matrix.mruby_version }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install bazel
+      run: |
+        sudo apt install curl gnupg
+        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
+        sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
+        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+        sudo apt update && sudo apt install bazel bazel-3.1.0 python2-pip python2-dev
+    - name: install package
+      run: sudo apt install libonig-dev
+    - name: download mruby
+      run: git clone --depth 1 -b $MRUBY_VERSION "https://github.com/mruby/mruby.git" mruby
+    - name: run test
+      run: cd mruby && MRUBY_CONFIG="../.github/workflows/config.rb" ./minirake all test
