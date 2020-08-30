@@ -1,10 +1,7 @@
 name: mrbgem test
 
 on:
-  schedule:
-    - cron: 0 0 * * *
-  push:
-    branches: [ master ]
+  push: {}
   pull_request:
     branches: [ master ]
 
