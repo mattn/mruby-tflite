@@ -11,7 +11,8 @@ MRuby::Gem::Specification.new('mruby-tflite') do |spec|
     spec.linker.library_paths << ENV['TENSORFLOW_ROOT'] + "tensorflow/lite/experimental/c/"
     spec.linker.libraries << 'tensorflowlite_c'
   else
-    file "#{dir}/src/mrb_tflite.c" => __FILE__ do |t|
+    header = "#{build_dir}/tensorflow/tensorflow/lite/c/c_api.h"
+    file header => __FILE__ do
       FileUtils.mkdir_p build_dir
       Dir.chdir build_dir do
         unless Dir.exists? 'tensorflow'
@@ -26,6 +27,7 @@ MRuby::Gem::Specification.new('mruby-tflite') do |spec|
         end
       end
     end
+    file "#{dir}/src/mrb_tflite.c" => header
     cc.include_paths << "#{build_dir}/tensorflow"
     lib_paths = [
       "#{build_dir}/tensorflow/bazel-bin/tensorflow/lite",
