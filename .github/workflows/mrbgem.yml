@@ -18,15 +18,13 @@ jobs:
       MRUBY_VERSION: ${{ matrix.mruby_version }}
     steps:
     - uses: actions/checkout@v2
-    - name: Install bazel
+    - name: install package
       run: |
         sudo apt install curl gnupg
         curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
         sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
         echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-        sudo apt update && sudo apt install bazel bazel-3.1.0 python2-pip python2-dev
-    - name: install package
-      run: sudo apt install libonig-dev
+        sudo apt update && sudo apt install bazel bazel-3.1.0 python-pip python-dev
     - name: download mruby
       run: git clone --depth 1 -b $MRUBY_VERSION "https://github.com/mruby/mruby.git" mruby
     - name: run test
