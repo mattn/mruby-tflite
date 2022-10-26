@@ -340,7 +340,7 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
       }
       float32s = (float*) TfLiteTensorData(tensor);
       for (i = 0; i < len; i++) {
-        float32s[i] = mrb_float(mrb_ary_entry(arg_data, i));
+        float32s[i] = mrb_to_float(mrb, mrb_ary_entry(arg_data, i));
       }
       break;
     default:
