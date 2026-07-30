@@ -8,14 +8,14 @@ MRuby::Gem::Specification.new('mruby-tflite') do |spec|
 
   if ENV['TENSORFLOW_ROOT']
     spec.cc.include_paths << ENV['TENSORFLOW_ROOT']
-    spec.linker.library_paths << ENV['TENSORFLOW_ROOT'] + "tensorflow/lite/experimental/c/"
+    spec.linker.library_paths << File.join(ENV['TENSORFLOW_ROOT'], 'tensorflow/lite/experimental/c')
     spec.linker.libraries << 'tensorflowlite_c'
   else
     header = "#{build_dir}/tensorflow/tensorflow/lite/c/c_api.h"
     file header => __FILE__ do
       FileUtils.mkdir_p build_dir
       Dir.chdir build_dir do
-        unless Dir.exists? 'tensorflow'
+        unless Dir.exist? 'tensorflow'
           sh "git clone https://github.com/tensorflow/tensorflow.git --depth 1 -b v#{version}"
           sh "cd tensorflow; patch -p1 -i #{dir}/tensorflow.patch"
         end
