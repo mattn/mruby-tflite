@@ -20,3 +20,17 @@ assert('tensor index out of range') do
   assert_raise(ArgumentError) { interpreter.output_tensor(100) }
   assert_raise(ArgumentError) { interpreter.output_tensor(-1) }
 end
+
+assert('gc does not collect objects in use') do
+  data = IO.read(TEST_ARGS['model'])
+  interpreter = TfLite::Interpreter.new(TfLite::Model.new(data))
+  data = nil
+  GC.start
+  interpreter.allocate_tensors
+  input = interpreter.input_tensor(0)
+  output = interpreter.output_tensor(0)
+  GC.start
+  input.data = [1, 0]
+  interpreter.invoke
+  assert_equal(1, output.data[0].round)
+end
