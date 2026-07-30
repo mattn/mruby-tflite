@@ -142,12 +142,21 @@ static mrb_value
 mrb_tflite_interpreter_options_add_delegate(mrb_state *mrb, mrb_value self) {
   TfLiteInterpreterOptions* interpreter_options;
   mrb_value delegate;
+  mrb_value delegates;
   mrb_get_args(mrb, "o", &delegate);
   if (!mrb_data_p(delegate) || DATA_PTR(delegate) == NULL) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
   interpreter_options = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_options_type);
   TfLiteInterpreterOptionsAddDelegate(interpreter_options, DATA_PTR(delegate));
+  /* The options (and any interpreter created from them) reference the
+   * delegate; keep it from being collected. */
+  delegates = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@delegates"));
+  if (mrb_nil_p(delegates)) {
+    delegates = mrb_ary_new(mrb);
+    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@delegates"), delegates);
+  }
+  mrb_ary_push(mrb, delegates, delegate);
   return mrb_nil_value();
 }
 
@@ -175,8 +184,10 @@ mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter");
   }
   /* The interpreter reads the model data for its whole lifetime; keep the
-   * model object (and thus its buffer) from being collected. */
+   * model object (and thus its buffer) from being collected. Delegates added
+   * to the options must outlive the interpreter as well. */
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@model"), arg_model);
+  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@options"), arg_options);
   DATA_TYPE(self) = &mrb_tflite_interpreter_type;
   DATA_PTR(self) = interpreter;
   return self;
