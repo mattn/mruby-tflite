@@ -5,28 +5,42 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  TFLITE_VERSION: 2.16.2
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04]
-        mruby_version: [master, 2.1.2, 1.4.1]
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }} & mruby-${{ matrix.mruby_version }}
+        mruby_version: [master, 3.3.0]
+    runs-on: ubuntu-latest
+    name: ubuntu-latest & mruby-${{ matrix.mruby_version }}
     env:
       MRUBY_VERSION: ${{ matrix.mruby_version }}
     steps:
-    - uses: actions/checkout@v2
-    - name: install package
+    - uses: actions/checkout@v4
+    - name: cache tensorflow lite
+      id: cache-tflite
+      uses: actions/cache@v4
+      with:
+        path: tflite
+        key: tflite-${{ env.TFLITE_VERSION }}
+    - name: build tensorflow lite C library
+      if: steps.cache-tflite.outputs.cache-hit != 'true'
       run: |
-        sudo apt install curl gnupg
-        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-        sudo mv bazel.gpg /etc/apt/trusted.gpg.d/
-        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-        sudo apt update && sudo apt install bazel bazel-3.1.0 python-pip python-dev libegl1-mesa-dev libgles2-mesa-dev
-        sudo pip install numpy future
+        git clone --depth 1 -b v$TFLITE_VERSION https://github.com/tensorflow/tensorflow.git tensorflow-src
+        cmake -S tensorflow-src/tensorflow/lite/c -B tflite-build \
+          -DCMAKE_BUILD_TYPE=Release -DTFLITE_ENABLE_XNNPACK=OFF
+        cmake --build tflite-build -j$(nproc) -t tensorflowlite_c
+        mkdir -p tflite/tensorflow/lite/experimental/c
+        cp tflite-build/libtensorflowlite_c.so tflite/tensorflow/lite/experimental/c/
+        rsync -a --include='*/' --include='*.h' --exclude='*' tensorflow-src/tensorflow/ tflite/tensorflow/
     - name: download mruby
       run: git clone --depth 1 -b $MRUBY_VERSION "https://github.com/mruby/mruby.git" mruby
     - name: run test
+      env:
+        TENSORFLOW_ROOT: ${{ github.workspace }}/tflite/
+        LD_LIBRARY_PATH: ${{ github.workspace }}/tflite/tensorflow/lite/experimental/c
+        ASAN_OPTIONS: detect_leaks=0
       run: cd mruby && MRUBY_CONFIG="../.github/workflows/config.rb" ./minirake all test
