@@ -300,7 +300,7 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
     default:
       mrb_raisef(mrb, E_RUNTIME_ERROR, "tensor type %S not supported", mrb_str_new_cstr(mrb, tensor_type_name(type)));
   }
-  MRB_SET_FROZEN_FLAG(mrb_basic_ptr(ret));
+  mrb_obj_freeze(mrb, ret);
   return ret;
 }
 

@@ -3,8 +3,7 @@ MRuby::Gem::Specification.new('mruby-tflite') do |spec|
   spec.authors = 'mattn'
   spec.version = '2.3.0'
 
-  add_test_dependency 'mruby-env'
-  ENV['MRB_TFLITE_XORMODEL'] = "#{dir}/test/xor_model.tflite"
+  spec.test_args = { 'model' => "#{dir}/test/xor_model.tflite" }
 
   if ENV['TENSORFLOW_ROOT']
     spec.cc.include_paths << ENV['TENSORFLOW_ROOT']
