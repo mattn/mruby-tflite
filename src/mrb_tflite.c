@@ -205,6 +205,9 @@ mrb_tflite_interpreter_input_tensor(mrb_state *mrb, mrb_value self) {
   mrb_value c;
   TfLiteInterpreter* interpreter = DATA_PTR(self);
   mrb_get_args(mrb, "i", &index);
+  if (index < 0 || index >= TfLiteInterpreterGetInputTensorCount(interpreter)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "index out of range");
+  }
   tensor = TfLiteInterpreterGetInputTensor(interpreter, index);
   if (tensor == NULL) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
@@ -224,7 +227,13 @@ mrb_tflite_interpreter_output_tensor(mrb_state *mrb, mrb_value self) {
   mrb_value c;
   TfLiteInterpreter* interpreter = DATA_PTR(self);
   mrb_get_args(mrb, "i", &index);
+  if (index < 0 || index >= TfLiteInterpreterGetOutputTensorCount(interpreter)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "index out of range");
+  }
   tensor = (TfLiteTensor*) TfLiteInterpreterGetOutputTensor(interpreter, index);
+  if (tensor == NULL) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+  }
   _class_tflite_tensor = mrb_class_get_under(mrb, mrb_module_get(mrb, "TfLite"), "Tensor");
   c = mrb_obj_new(mrb, _class_tflite_tensor, 0, NULL);
   DATA_TYPE(c) = &mrb_tflite_tensor_type_;
