@@ -7,5 +7,6 @@ MRuby::Build.new do |conf|
   conf.cxx.flags << '-fsanitize=address,undefined'
   conf.linker.flags << '-fsanitize=address,undefined'
 
+  conf.gem :core => 'mruby-compiler'
   conf.gem "#{MRUBY_ROOT}/.."
 end
