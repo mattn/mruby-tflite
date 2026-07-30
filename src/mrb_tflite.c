@@ -133,7 +133,7 @@ mrb_tflite_interpreter_options_num_threads_set(mrb_state *mrb, mrb_value self) {
   TfLiteInterpreterOptions* interpreter_options;
   int num_threads = 0;
   mrb_get_args(mrb, "i", &num_threads);
-  interpreter_options = DATA_PTR(self);
+  interpreter_options = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_options_type);
   TfLiteInterpreterOptionsSetNumThreads(interpreter_options, num_threads);
   return mrb_nil_value();
 }
@@ -143,7 +143,10 @@ mrb_tflite_interpreter_options_add_delegate(mrb_state *mrb, mrb_value self) {
   TfLiteInterpreterOptions* interpreter_options;
   mrb_value delegate;
   mrb_get_args(mrb, "o", &delegate);
-  interpreter_options = DATA_PTR(self);
+  if (!mrb_data_p(delegate) || DATA_PTR(delegate) == NULL) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+  }
+  interpreter_options = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_options_type);
   TfLiteInterpreterOptionsAddDelegate(interpreter_options, DATA_PTR(delegate));
   return mrb_nil_value();
 }
@@ -152,17 +155,22 @@ static mrb_value
 mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
   TfLiteInterpreter* interpreter;
   TfLiteInterpreterOptions* interpreter_options = NULL;
+  TfLiteModel* model;
   mrb_value arg_model;
   mrb_value arg_options = mrb_nil_value();
 
   mrb_get_args(mrb, "o|o", &arg_model, &arg_options);
-  if (mrb_nil_p(arg_model) || DATA_TYPE(arg_model) != &mrb_tflite_model_type) {
+  model = (TfLiteModel*) mrb_data_check_get_ptr(mrb, arg_model, &mrb_tflite_model_type);
+  if (model == NULL) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
-  if (!mrb_nil_p(arg_options) && DATA_TYPE(arg_options) == &mrb_tflite_interpreter_options_type) {
-    interpreter_options = DATA_PTR(arg_options);
+  if (!mrb_nil_p(arg_options)) {
+    interpreter_options = (TfLiteInterpreterOptions*) mrb_data_check_get_ptr(mrb, arg_options, &mrb_tflite_interpreter_options_type);
+    if (interpreter_options == NULL) {
+      mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+    }
   }
-  interpreter = TfLiteInterpreterCreate((TfLiteModel*) DATA_PTR(arg_model), interpreter_options);
+  interpreter = TfLiteInterpreterCreate(model, interpreter_options);
   if (interpreter == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter");
   }
@@ -176,7 +184,7 @@ mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_allocate_tensors(mrb_state *mrb, mrb_value self) {
-  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_type);
   if (TfLiteInterpreterAllocateTensors(interpreter) != kTfLiteOk) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot allocate tensors");
   }
@@ -185,7 +193,7 @@ mrb_tflite_interpreter_allocate_tensors(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_invoke(mrb_state *mrb, mrb_value self) {
-  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_type);
   if (TfLiteInterpreterInvoke(interpreter) != kTfLiteOk) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot invoke");
   }
@@ -194,13 +202,13 @@ mrb_tflite_interpreter_invoke(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_interpreter_input_tensor_count(mrb_state *mrb, mrb_value self) {
-  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_type);
   return mrb_fixnum_value(TfLiteInterpreterGetInputTensorCount(interpreter));
 }
 
 static mrb_value
 mrb_tflite_interpreter_output_tensor_count(mrb_state *mrb, mrb_value self) {
-  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_type);
   return mrb_fixnum_value(TfLiteInterpreterGetOutputTensorCount(interpreter));
 }
 
@@ -210,7 +218,7 @@ mrb_tflite_interpreter_input_tensor(mrb_state *mrb, mrb_value self) {
   mrb_int index;
   struct RClass* _class_tflite_tensor;
   mrb_value c;
-  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_type);
   mrb_get_args(mrb, "i", &index);
   if (index < 0 || index >= TfLiteInterpreterGetInputTensorCount(interpreter)) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "index out of range");
@@ -233,7 +241,7 @@ mrb_tflite_interpreter_output_tensor(mrb_state *mrb, mrb_value self) {
   mrb_int index;
   struct RClass* _class_tflite_tensor;
   mrb_value c;
-  TfLiteInterpreter* interpreter = DATA_PTR(self);
+  TfLiteInterpreter* interpreter = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_type);
   mrb_get_args(mrb, "i", &index);
   if (index < 0 || index >= TfLiteInterpreterGetOutputTensorCount(interpreter)) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "index out of range");
@@ -252,25 +260,25 @@ mrb_tflite_interpreter_output_tensor(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_tensor_type(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   return mrb_fixnum_value(TfLiteTensorType(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_name(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   return mrb_str_new_cstr(mrb, TfLiteTensorName(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_num_dims(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   return mrb_fixnum_value(TfLiteTensorNumDims(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_dim(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   mrb_int index;
   mrb_get_args(mrb, "i", &index);
   return mrb_fixnum_value(TfLiteTensorDim(tensor, index));
@@ -278,13 +286,13 @@ mrb_tflite_tensor_dim(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_tensor_byte_size(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   return mrb_fixnum_value(TfLiteTensorByteSize(tensor));
 }
 
 static mrb_value
 mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   int ai, i;
   mrb_value ret;
   int len;
@@ -334,7 +342,7 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
 
 static mrb_value
 mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
-  TfLiteTensor* tensor = DATA_PTR(self);
+  TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   int i;
   int len, ary_len;
   TfLiteType type;
@@ -358,7 +366,7 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
       }
       uint8s = (uint8_t*) TfLiteTensorData(tensor);
       for (i = 0; i < len; i++) {
-        uint8s[i] = (uint8_t) mrb_fixnum(mrb_ary_entry(arg_data, i));
+        uint8s[i] = (uint8_t) mrb_as_int(mrb, mrb_ary_entry(arg_data, i));
       }
       break;
     case kTfLiteInt8:
@@ -368,7 +376,7 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
       }
       int8s = (int8_t*) TfLiteTensorData(tensor);
       for (i = 0; i < len; i++) {
-        int8s[i] = (int8_t) mrb_fixnum(mrb_ary_entry(arg_data, i));
+        int8s[i] = (int8_t) mrb_as_int(mrb, mrb_ary_entry(arg_data, i));
       }
       break;
     case kTfLiteFloat32:

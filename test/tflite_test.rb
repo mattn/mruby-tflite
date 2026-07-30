@@ -21,6 +21,20 @@ assert('tensor index out of range') do
   assert_raise(ArgumentError) { interpreter.output_tensor(-1) }
 end
 
+assert('invalid arguments raise') do
+  assert_raise(ArgumentError) { TfLite::Interpreter.new(nil) }
+  assert_raise(ArgumentError) { TfLite::Interpreter.new(1) }
+  model = TfLite::Model.from_file(TEST_ARGS['model'])
+  assert_raise(ArgumentError) { TfLite::Interpreter.new(model, 1) }
+  assert_raise(TypeError) { TfLite::Tensor.new.name }
+  interpreter = TfLite::Interpreter.new(model)
+  interpreter.allocate_tensors
+  input = interpreter.input_tensor(0)
+  assert_raise(TypeError) { input.data = ["a", "b"] }
+  assert_raise(ArgumentError) { input.data = [1] }
+  assert_raise(ArgumentError) { input.data = 1 }
+end
+
 assert('gc does not collect objects in use') do
   data = IO.read(TEST_ARGS['model'])
   interpreter = TfLite::Interpreter.new(TfLite::Model.new(data))
