@@ -272,18 +272,28 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
   int len;
   TfLiteType type;
   uint8_t *uint8s;
+  int8_t *int8s;
   float *float32s;
 
   type = TfLiteTensorType(tensor);
   switch (type) {
     case kTfLiteUInt8:
-    case kTfLiteInt8:
       len = TfLiteTensorByteSize(tensor);
       uint8s = (uint8_t*) TfLiteTensorData(tensor);
       ret = mrb_ary_new_capa(mrb, len);
       ai = mrb_gc_arena_save(mrb);
       for (i = 0; i < len; i++) {
         mrb_ary_push(mrb, ret, mrb_fixnum_value(uint8s[i]));
+        mrb_gc_arena_restore(mrb, ai);
+      }
+      break;
+    case kTfLiteInt8:
+      len = TfLiteTensorByteSize(tensor);
+      int8s = (int8_t*) TfLiteTensorData(tensor);
+      ret = mrb_ary_new_capa(mrb, len);
+      ai = mrb_gc_arena_save(mrb);
+      for (i = 0; i < len; i++) {
+        mrb_ary_push(mrb, ret, mrb_fixnum_value(int8s[i]));
         mrb_gc_arena_restore(mrb, ai);
       }
       break;
@@ -311,6 +321,7 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
   int len, ary_len;
   TfLiteType type;
   uint8_t *uint8s;
+  int8_t *int8s;
   float *float32s;
   mrb_value arg_data;
 
@@ -323,7 +334,6 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
   type = TfLiteTensorType(tensor);
   switch (type) {
     case kTfLiteUInt8:
-    case kTfLiteInt8:
       len = TfLiteTensorByteSize(tensor);
       if (ary_len != len) {
         mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
@@ -331,6 +341,16 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
       uint8s = (uint8_t*) TfLiteTensorData(tensor);
       for (i = 0; i < len; i++) {
         uint8s[i] = (uint8_t) mrb_fixnum(mrb_ary_entry(arg_data, i));
+      }
+      break;
+    case kTfLiteInt8:
+      len = TfLiteTensorByteSize(tensor);
+      if (ary_len != len) {
+        mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
+      }
+      int8s = (int8_t*) TfLiteTensorData(tensor);
+      for (i = 0; i < len; i++) {
+        int8s[i] = (int8_t) mrb_fixnum(mrb_ary_entry(arg_data, i));
       }
       break;
     case kTfLiteFloat32:
