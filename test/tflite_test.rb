@@ -19,6 +19,9 @@ assert('tensor index out of range') do
   assert_raise(ArgumentError) { interpreter.input_tensor(-1) }
   assert_raise(ArgumentError) { interpreter.output_tensor(100) }
   assert_raise(ArgumentError) { interpreter.output_tensor(-1) }
+  input = interpreter.input_tensor(0)
+  assert_raise(ArgumentError) { input.dim(100) }
+  assert_raise(ArgumentError) { input.dim(-1) }
 end
 
 assert('invalid arguments raise') do

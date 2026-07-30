@@ -281,6 +281,9 @@ mrb_tflite_tensor_dim(mrb_state *mrb, mrb_value self) {
   TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
   mrb_int index;
   mrb_get_args(mrb, "i", &index);
+  if (index < 0 || index >= TfLiteTensorNumDims(tensor)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "index out of range");
+  }
   return mrb_fixnum_value(TfLiteTensorDim(tensor, index));
 }
 
