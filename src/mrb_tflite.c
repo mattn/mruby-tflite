@@ -86,10 +86,14 @@ mrb_tflite_model_init(mrb_state *mrb, mrb_value self) {
   TfLiteModel* model;
   mrb_value str;
   mrb_get_args(mrb, "S", &str);
+  /* TfLiteModelCreate does not copy the buffer, so keep our own copy of the
+   * string alive as long as this object. */
+  str = mrb_str_dup(mrb, str);
   model = TfLiteModelCreate(RSTRING_PTR(str), RSTRING_LEN(str));
   if (model == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create model");
   }
+  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@data"), str);
   DATA_TYPE(self) = &mrb_tflite_model_type;
   DATA_PTR(self) = model;
   return self;
@@ -162,6 +166,9 @@ mrb_tflite_interpreter_init(mrb_state *mrb, mrb_value self) {
   if (interpreter == NULL) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "cannot create interpreter");
   }
+  /* The interpreter reads the model data for its whole lifetime; keep the
+   * model object (and thus its buffer) from being collected. */
+  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@model"), arg_model);
   DATA_TYPE(self) = &mrb_tflite_interpreter_type;
   DATA_PTR(self) = interpreter;
   return self;
@@ -213,6 +220,7 @@ mrb_tflite_interpreter_input_tensor(mrb_state *mrb, mrb_value self) {
   c = mrb_obj_new(mrb, _class_tflite_tensor, 0, NULL);
   DATA_TYPE(c) = &mrb_tflite_tensor_type_;
   DATA_PTR(c) = tensor;
+  mrb_iv_set(mrb, c, mrb_intern_lit(mrb, "@interpreter"), self);
   return c;
 }
 
@@ -229,6 +237,7 @@ mrb_tflite_interpreter_output_tensor(mrb_state *mrb, mrb_value self) {
   c = mrb_obj_new(mrb, _class_tflite_tensor, 0, NULL);
   DATA_TYPE(c) = &mrb_tflite_tensor_type_;
   DATA_PTR(c) = tensor;
+  mrb_iv_set(mrb, c, mrb_intern_lit(mrb, "@interpreter"), self);
   return c;
 }
 
