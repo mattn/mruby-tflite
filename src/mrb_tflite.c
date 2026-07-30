@@ -278,7 +278,11 @@ mrb_tflite_tensor_type(mrb_state *mrb, mrb_value self) {
 static mrb_value
 mrb_tflite_tensor_name(mrb_state *mrb, mrb_value self) {
   TfLiteTensor* tensor = mrb_data_get_ptr(mrb, self, &mrb_tflite_tensor_type_);
-  return mrb_str_new_cstr(mrb, TfLiteTensorName(tensor));
+  const char* name = TfLiteTensorName(tensor);
+  if (name == NULL) {
+    return mrb_nil_value();
+  }
+  return mrb_str_new_cstr(mrb, name);
 }
 
 static mrb_value
