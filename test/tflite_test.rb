@@ -11,6 +11,16 @@ assert('xor') do
   end
 end
 
+assert('tensor index out of range') do
+  model = TfLite::Model.from_file(TEST_ARGS['model'])
+  interpreter = TfLite::Interpreter.new(model)
+  interpreter.allocate_tensors
+  assert_raise(ArgumentError) { interpreter.input_tensor(100) }
+  assert_raise(ArgumentError) { interpreter.input_tensor(-1) }
+  assert_raise(ArgumentError) { interpreter.output_tensor(100) }
+  assert_raise(ArgumentError) { interpreter.output_tensor(-1) }
+end
+
 assert('gc does not collect objects in use') do
   data = IO.read(TEST_ARGS['model'])
   interpreter = TfLite::Interpreter.new(TfLite::Model.new(data))
