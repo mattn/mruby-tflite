@@ -6,9 +6,26 @@ MRuby::Gem::Specification.new('mruby-tflite') do |spec|
   add_test_dependency 'mruby-io'
   spec.test_args = { 'model' => "#{dir}/test/xor_model.tflite" }
 
+  # Prefix that holds an already installed TensorFlow Lite C library, i.e.
+  # <prefix>/include/tensorflow/lite/c/c_api.h and <prefix>/lib/libtensorflowlite_c.*
+  prefix = nil
+  unless ENV['TENSORFLOW_ROOT']
+    candidates = ENV['TFLITE_PREFIX'] ? [ENV['TFLITE_PREFIX']] : %w[/usr/local /usr /opt/homebrew /opt/local]
+    prefix = candidates.find do |pre|
+      File.exist?(File.join(pre, 'include/tensorflow/lite/c/c_api.h')) &&
+        !Dir.glob(File.join(pre, 'lib/*tensorflowlite_c.*')).empty?
+    end
+  end
+
   if ENV['TENSORFLOW_ROOT']
     spec.cc.include_paths << ENV['TENSORFLOW_ROOT']
     spec.linker.library_paths << File.join(ENV['TENSORFLOW_ROOT'], 'tensorflow/lite/experimental/c')
+    spec.linker.libraries << 'tensorflowlite_c'
+  elsif prefix
+    lib_path = File.join(prefix, 'lib')
+    spec.cc.include_paths << File.join(prefix, 'include')
+    spec.linker.library_paths << lib_path
+    ENV['LD_LIBRARY_PATH'] = "#{ENV['LD_LIBRARY_PATH']}:#{lib_path}"
     spec.linker.libraries << 'tensorflowlite_c'
   else
     header = "#{build_dir}/tensorflow/tensorflow/lite/c/c_api.h"
