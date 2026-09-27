@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -131,10 +132,15 @@ mrb_tflite_interpreter_options_init(mrb_state *mrb, mrb_value self) {
 static mrb_value
 mrb_tflite_interpreter_options_num_threads_set(mrb_state *mrb, mrb_value self) {
   TfLiteInterpreterOptions* interpreter_options;
-  int num_threads = 0;
+  mrb_int num_threads = 0;
   mrb_get_args(mrb, "i", &num_threads);
+#if MRB_INT_BIT > 32
+  if (num_threads < INT_MIN || num_threads > INT_MAX) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "num_threads out of range");
+  }
+#endif
   interpreter_options = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_options_type);
-  TfLiteInterpreterOptionsSetNumThreads(interpreter_options, num_threads);
+  TfLiteInterpreterOptionsSetNumThreads(interpreter_options, (int) num_threads);
   return mrb_nil_value();
 }
 
@@ -319,6 +325,10 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
   int8_t *int8s;
   float *float32s;
 
+  if (TfLiteTensorData(tensor) == NULL) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "tensor is not allocated");
+  }
+
   type = TfLiteTensorType(tensor);
   switch (type) {
     case kTfLiteUInt8:
@@ -370,8 +380,21 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
   mrb_value arg_data;
 
   mrb_get_args(mrb, "o", &arg_data);
+  if (TfLiteTensorData(tensor) == NULL) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "tensor is not allocated");
+  }
+  if (mrb_string_p(arg_data)) {
+    /* Raw bytes in the layout the tensor uses. Large tensors such as images
+     * are cheaper to fill this way than through an array of every element. */
+    len = TfLiteTensorByteSize(tensor);
+    if (RSTRING_LEN(arg_data) != len) {
+      mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
+    }
+    memcpy(TfLiteTensorData(tensor), RSTRING_PTR(arg_data), len);
+    return mrb_nil_value();
+  }
   if (mrb_nil_p(arg_data) || mrb_type(arg_data) != MRB_TT_ARRAY) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "argument must be array");
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "argument must be array or string");
   }
   ary_len = RARRAY_LEN(arg_data);
 
