@@ -325,6 +325,10 @@ mrb_tflite_tensor_data_get(mrb_state *mrb, mrb_value self) {
   int8_t *int8s;
   float *float32s;
 
+  if (TfLiteTensorData(tensor) == NULL) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "tensor is not allocated");
+  }
+
   type = TfLiteTensorType(tensor);
   switch (type) {
     case kTfLiteUInt8:
@@ -376,6 +380,9 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
   mrb_value arg_data;
 
   mrb_get_args(mrb, "o", &arg_data);
+  if (TfLiteTensorData(tensor) == NULL) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "tensor is not allocated");
+  }
   if (mrb_string_p(arg_data)) {
     /* Raw bytes in the layout the tensor uses. Large tensors such as images
      * are cheaper to fill this way than through an array of every element. */

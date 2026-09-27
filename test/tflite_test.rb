@@ -77,3 +77,12 @@ assert('tensor data from string') do
   assert_equal(1, output.data[0].round)
   assert_raise(ArgumentError) { input.data = "\x00" }
 end
+
+assert('tensor data before allocate_tensors') do
+  model = TfLite::Model.from_file(TEST_ARGS['model'])
+  interpreter = TfLite::Interpreter.new(model)
+  input = interpreter.input_tensor(0)
+  assert_raise(RuntimeError) { input.data }
+  assert_raise(RuntimeError) { input.data = [1, 0] }
+  assert_raise(RuntimeError) { input.data = "\x00" * input.byte_size }
+end
