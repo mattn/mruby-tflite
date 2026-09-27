@@ -51,3 +51,16 @@ assert('gc does not collect objects in use') do
   interpreter.invoke
   assert_equal(1, output.data[0].round)
 end
+
+assert('interpreter options') do
+  model = TfLite::Model.from_file(TEST_ARGS['model'])
+  options = TfLite::InterpreterOptions.new
+  options.num_threads = 2
+  interpreter = TfLite::Interpreter.new(model, options)
+  interpreter.allocate_tensors
+  input = interpreter.input_tensor(0)
+  output = interpreter.output_tensor(0)
+  input.data = [1, 0]
+  interpreter.invoke
+  assert_equal(1, output.data[0].round)
+end

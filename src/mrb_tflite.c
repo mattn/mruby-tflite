@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -131,10 +132,15 @@ mrb_tflite_interpreter_options_init(mrb_state *mrb, mrb_value self) {
 static mrb_value
 mrb_tflite_interpreter_options_num_threads_set(mrb_state *mrb, mrb_value self) {
   TfLiteInterpreterOptions* interpreter_options;
-  int num_threads = 0;
+  mrb_int num_threads = 0;
   mrb_get_args(mrb, "i", &num_threads);
+#if MRB_INT_BIT > 32
+  if (num_threads < INT_MIN || num_threads > INT_MAX) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "num_threads out of range");
+  }
+#endif
   interpreter_options = mrb_data_get_ptr(mrb, self, &mrb_tflite_interpreter_options_type);
-  TfLiteInterpreterOptionsSetNumThreads(interpreter_options, num_threads);
+  TfLiteInterpreterOptionsSetNumThreads(interpreter_options, (int) num_threads);
   return mrb_nil_value();
 }
 
