@@ -17,6 +17,13 @@ output = interpreter.output_tensor(0)
 end
 ```
 
+## Examples
+
+`example/` has scripts for xor, FizzBuzz, dumping the tensor layout of a model,
+benchmarking a model over several thread counts, and classifying images with
+MobileNet. See [example/README.md](example/README.md) for how to build an mruby
+that can run them.
+
 ## Requirements
 
 * TensorFlow Lite
