@@ -376,8 +376,18 @@ mrb_tflite_tensor_data_set(mrb_state *mrb, mrb_value self) {
   mrb_value arg_data;
 
   mrb_get_args(mrb, "o", &arg_data);
+  if (mrb_string_p(arg_data)) {
+    /* Raw bytes in the layout the tensor uses. Large tensors such as images
+     * are cheaper to fill this way than through an array of every element. */
+    len = TfLiteTensorByteSize(tensor);
+    if (RSTRING_LEN(arg_data) != len) {
+      mrb_raise(mrb, E_ARGUMENT_ERROR, "argument size mismatched");
+    }
+    memcpy(TfLiteTensorData(tensor), RSTRING_PTR(arg_data), len);
+    return mrb_nil_value();
+  }
   if (mrb_nil_p(arg_data) || mrb_type(arg_data) != MRB_TT_ARRAY) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "argument must be array");
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "argument must be array or string");
   }
   ary_len = RARRAY_LEN(arg_data);
 

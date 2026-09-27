@@ -64,3 +64,16 @@ assert('interpreter options') do
   interpreter.invoke
   assert_equal(1, output.data[0].round)
 end
+
+assert('tensor data from string') do
+  model = TfLite::Model.from_file(TEST_ARGS['model'])
+  interpreter = TfLite::Interpreter.new(model)
+  interpreter.allocate_tensors
+  input = interpreter.input_tensor(0)
+  output = interpreter.output_tensor(0)
+  # 1.0 and 0.0 as little endian float32.
+  input.data = "\x00\x00\x80\x3f\x00\x00\x00\x00"
+  interpreter.invoke
+  assert_equal(1, output.data[0].round)
+  assert_raise(ArgumentError) { input.data = "\x00" }
+end
