@@ -5,3 +5,5 @@ src/*.o
 *.d
 compile_flags.txt
 *.lock
+example/mruby
+example/mruby-src/
